@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Nutrition Protocol — The Forensic Feed Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0c0d0a;
+  --panel:#15160f;
+  --panel-raised:#1b1c14;
+  --line:#2a2b21;
+  --line-bright:#3a3c2e;
+  --bone:#ece7da;
+  --bone-dim:#9b9686;
+  --bone-faint:#5e5c50;
+
+  --rust:#d4773f;
+  --rust-bright:#f0935a;
+  --rust-dim:#3a2418;
+
+  --sage:#5c8a72;
+  --sage-bright:#7eb094;
+  --sage-dim:#1c2820;
+
+  --accent:var(--rust);
+  --accent-bright:var(--rust-bright);
+  --accent-dim:var(--rust-dim);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--void);
+  color:var(--bone);
+  font-family:'Inter',sans-serif;
+  font-weight:400;
+  line-height:1.55;
+  overflow-x:hidden;
+  transition:background 0.6s ease;
+}
+
+::selection{background:var(--accent);color:var(--void);}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(--void);}
+::-webkit-scrollbar-thumb{background:var(--line-bright);}
+
+/* ---------- grain ---------- */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;opacity:0.5;
+}
+
+/* ---------- top bar / day switcher ---------- */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:rgba(12,13,10,0.88);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-inner{
+  max-width:900px;margin:0 auto;
+  padding:0.9rem 1.1rem 0.7rem;
+}
+.brand-row{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:0.7rem;
+}
+.brand{
+  font-family:'Fraunces',serif;font-weight:600;font-size:0.95rem;
+  letter-spacing:0.01em;color:var(--bone);
+}
+.brand .accent-dot{color:var(--accent-bright);}
+.mode-label{
+  font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+  letter-spacing:0.08em;text-transform:uppercase;color:var(--bone-faint);
+}
+.day-rail{
+  display:flex;gap:0.35rem;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none;
+  padding-bottom:2px;
+}
+.day-rail::-webkit-scrollbar{display:none;}
+.day-pill{
+  flex:0 0 auto;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.68rem;letter-spacing:0.04em;
+  padding:0.45rem 0.7rem;
+  border:1px solid var(--line);
+  border-radius:3px;
+  color:var(--bone-dim);
+  background:transparent;
+  cursor:pointer;
+  transition:all 0.25s ease;
+  white-space:nowrap;
+  text-transform:uppercase;
+  position:relative;
+}
+.day-pill .pill-day{font-weight:600;color:var(--bone);}
+.day-pill .pill-type{display:block;font-size:0.58rem;color:var(--bone-faint);margin-top:1px;}
+.day-pill:hover{border-color:var(--line-bright);}
+.day-pill.active{
+  border-color:var(--accent);
+  background:var(--accent-dim);
+  color:var(--bone);
+}
+.day-pill.active .pill-day{color:var(--accent-bright);}
+.day-pill.active .pill-type{color:var(--bone-dim);}
+.day-pill.is-today::after{
+  content:'';
+  position:absolute;top:-3px;right:-3px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent-bright);
+  box-shadow:0 0 6px var(--accent-bright);
+}
+
+/* ---------- hero ---------- */
+.hero{
+  max-width:900px;margin:0 auto;
+  padding:3.2rem 1.1rem 2.4rem;
+  position:relative;
+}
+.hero-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--accent-bright);margin-bottom:1rem;
+  display:flex;align-items:center;gap:0.6rem;
+}
+.hero-eyebrow::before{
+  content:'';width:18px;height:1px;background:var(--accent-bright);
+}
+.hero-day{
+  font-family:'Fraunces',serif;
+  font-weight:300;
+  font-size:clamp(3.2rem,15vw,5.2rem);
+  line-height:0.95;
+  letter-spacing:-0.02em;
+  color:var(--bone);
+}
+.hero-day em{
+  font-style:italic;font-weight:500;color:var(--accent-bright);
+}
+.hero-sub{
+  margin-top:0.9rem;
+  font-size:1rem;
+  color:var(--bone-dim);
+  max-width:46ch;
+  font-weight:300;
+}
+.hero-sub strong{color:var(--bone);font-weight:500;}
+.hero-meta{
+  display:flex;gap:1.6rem;margin-top:1.6rem;flex-wrap:wrap;
+}
+.hero-meta-item{
+  font-family:'JetBrains Mono',monospace;
+}
+.hero-meta-item .val{
+  font-size:1.3rem;color:var(--accent-bright);font-weight:600;display:block;
+}
+.hero-meta-item .lbl{
+  font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--bone-faint);
+}
+
+/* ---------- now indicator ---------- */
+.now-banner{
+  max-width:900px;margin:0 auto;padding:0 1.1rem;
+}
+.now-banner-inner{
+  display:none;
+  align-items:center;gap:0.6rem;
+  background:var(--panel-raised);
+  border:1px solid var(--accent);
+  border-radius:6px;
+  padding:0.7rem 0.9rem;
+  margin-bottom:1.8rem;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.72rem;
+  color:var(--bone);
+}
+.now-banner-inner.show{display:flex;}
+.now-pulse{
+  width:7px;height:7px;border-radius:50%;background:var(--accent-bright);
+  box-shadow:0 0 0 0 rgba(212,119,63,0.6);
+  animation:pulse 2s infinite;
+  flex:0 0 auto;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(212,119,63,0.5);}
+  70%{box-shadow:0 0 0 8px rgba(212,119,63,0);}
+  100%{box-shadow:0 0 0 0 rgba(212,119,63,0);}
+}
+
+/* ---------- timeline ---------- */
+.timeline{
+  max-width:900px;margin:0 auto;
+  padding:0 1.1rem 4rem;
+  position:relative;
+}
+.timeline-rail{
+  position:absolute;
+  left:calc(1.1rem + 52px);
+  top:0;bottom:80px;
+  width:1px;
+  background:linear-gradient(to bottom, transparent, var(--line-bright) 2%, var(--line-bright) 96%, transparent);
+}
+.feed{
+  display:grid;
+  grid-template-columns:52px 1fr;
+  gap:1.1rem;
+  position:relative;
+  margin-bottom:0.15rem;
+}
+.feed-time-col{
+  display:flex;flex-direction:column;align-items:flex-end;
+  padding-top:0.15rem;
+  position:relative;
+}
+.feed-time{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.74rem;font-weight:600;
+  color:var(--bone-dim);
+  letter-spacing:-0.01em;
+  text-align:right;
+  line-height:1.2;
+}
+.feed-node{
+  position:absolute;
+  left:calc(52px - 4px);
+  top:0.3rem;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--void);
+  border:2px solid var(--line-bright);
+  z-index:2;
+}
+.feed.zero .feed-node{border-color:var(--bone-faint);background:var(--void);}
+.feed.meal .feed-node{border-color:var(--accent);background:var(--accent);}
+.feed.train .feed-node{
+  border-color:var(--accent-bright);background:var(--void);
+  width:13px;height:13px;left:calc(52px - 6px);top:0.18rem;
+}
+
+.feed-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:0.95rem 1.1rem 1rem;
+  margin-bottom:0.8rem;
+  cursor:pointer;
+  transition:border-color 0.25s ease, background 0.25s ease;
+}
+.feed-card:hover{border-color:var(--line-bright);}
+.feed-card.open{
+  background:var(--panel-raised);
+  border-color:var(--line-bright);
+}
+.feed-card.train-card{
+  border-color:var(--rust-dim);
+  background:linear-gradient(135deg, var(--panel) 0%, rgba(212,119,63,0.06) 100%);
+}
+
+.feed-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:0.8rem;
+}
+.feed-title-block{flex:1;min-width:0;}
+.feed-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--accent-bright);margin-bottom:0.2rem;
+}
+.feed.zero .feed-label{color:var(--bone-faint);}
+.feed-name{
+  font-family:'Fraunces',serif;font-weight:500;font-size:1.08rem;
+  color:var(--bone);letter-spacing:-0.005em;
+}
+.feed-macros{
+  flex:0 0 auto;text-align:right;
+}
+.feed-kcal{
+  font-family:'JetBrains Mono',monospace;font-weight:600;font-size:0.95rem;
+  color:var(--bone);
+}
+.feed-kcal span{font-size:0.62rem;color:var(--bone-faint);font-weight:400;margin-left:2px;}
+.feed-pcf{
+  font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+  color:var(--bone-faint);margin-top:0.15rem;
+  display:flex;gap:0.5rem;justify-content:flex-end;
+}
+.feed-pcf b{color:var(--bone-dim);font-weight:600;}
+
+.feed-chevron{
+  width:16px;height:16px;flex:0 0 auto;margin-top:0.3rem;
+  color:var(--bone-faint);
+  transition:transform 0.25s ease;
+}
+.feed-card.open .feed-chevron{transform:rotate(180deg);color:var(--accent-bright);}
+
+.feed-detail{
+  max-height:0;overflow:hidden;
+  transition:max-height 0.35s ease;
+}
+.feed-card.open .feed-detail{max-height:1200px;}
+.feed-detail-inner{
+  padding-top:0.85rem;margin-top:0.75rem;
+  border-top:1px solid var(--line);
+}
+.feed-detail-inner ul{list-style:none;}
+.feed-detail-inner li{
+  font-size:0.86rem;color:var(--bone-dim);
+  padding-left:1rem;position:relative;margin-bottom:0.55rem;
+  font-weight:300;
+}
+.feed-detail-inner li:last-child{margin-bottom:0;}
+.feed-detail-inner li::before{
+  content:'—';position:absolute;left:0;color:var(--bone-faint);
+}
+.feed-detail-inner li strong{color:var(--bone);font-weight:500;}
+
+.options-block{
+  margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed var(--line);
+}
+.options-label{
+  font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;
+  text-transform:uppercase;color:var(--accent-bright);margin-bottom:0.4rem;
+}
+
+/* day-divider note (e.g. "identical structure" days) */
+.day-note{
+  background:var(--panel);
+  border:1px dashed var(--line-bright);
+  border-radius:6px;
+  padding:0.9rem 1rem;
+  margin:0.4rem 0 1.4rem calc(52px + 1.1rem);
+  font-size:0.85rem;color:var(--bone-dim);
+  font-weight:300;
+}
+.day-note strong{color:var(--bone);font-weight:500;}
+
+/* totals strip */
+.totals-strip{
+  margin-top:1.6rem;margin-left:calc(52px + 1.1rem);
+  background:var(--panel-raised);
+  border:1px solid var(--line-bright);
+  border-radius:8px;
+  padding:1.1rem 1.2rem;
+}
+.totals-title{
+  font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--bone-faint);margin-bottom:0.8rem;
+}
+.totals-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0.9rem 0.5rem;
+}
+@media (min-width:540px){.totals-grid{grid-template-columns:repeat(4,1fr);}}
+.totals-grid .t-item .t-val{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.15rem;
+  color:var(--accent-bright);display:block;line-height:1.1;
+}
+.totals-grid .t-item .t-lbl{
+  font-size:0.62rem;color:var(--bone-faint);letter-spacing:0.02em;margin-top:0.2rem;
+  display:block;
+}
+
+/* ---------- reference sections ---------- */
+.ref-section{
+  max-width:900px;margin:0 auto;
+  padding:2.4rem 1.1rem;
+  border-top:1px solid var(--line);
+}
+.ref-section-head{
+  display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.3rem;
+}
+.ref-num{
+  font-family:'JetBrains Mono',monospace;color:var(--accent-bright);
+  font-size:0.85rem;font-weight:600;
+}
+.ref-title{
+  font-family:'Fraunces',serif;font-weight:500;font-size:1.4rem;color:var(--bone);
+}
+
+.targets-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;
+}
+@media (min-width:600px){.targets-grid{grid-template-columns:1fr 1fr 1fr;}}
+.target-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  padding:0.85rem 0.9rem;
+}
+.target-card .tc-val{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.1rem;
+  color:var(--bone);display:block;
+}
+.target-card .tc-lbl{
+  font-size:0.68rem;color:var(--bone-dim);margin-top:0.3rem;display:block;font-weight:400;
+}
+.target-card .tc-note{
+  font-size:0.62rem;color:var(--bone-faint);margin-top:0.25rem;display:block;font-weight:300;
+}
+
+.callout{
+  background:var(--accent-dim);
+  border:1px solid var(--accent);
+  border-radius:8px;
+  padding:1rem 1.1rem;
+  margin-top:1.1rem;
+  font-size:0.86rem;color:var(--bone);font-weight:300;
+}
+.callout strong{font-weight:600;color:var(--accent-bright);}
+
+.prose-list{list-style:none;margin-top:0.9rem;}
+.prose-list li{
+  font-size:0.88rem;color:var(--bone-dim);font-weight:300;
+  padding:0.7rem 0;border-bottom:1px solid var(--line);
+}
+.prose-list li:last-child{border-bottom:none;}
+.prose-list li strong{color:var(--bone);font-weight:500;}
+
+.subsection{margin-top:1.7rem;}
+.subsection-title{
+  font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.05em;
+  text-transform:uppercase;color:var(--bone-faint);margin-bottom:0.6rem;
+}
+
+/* accordion for sub-references */
+.acc{
+  border:1px solid var(--line);border-radius:6px;
+  margin-bottom:0.5rem;overflow:hidden;background:var(--panel);
+}
+.acc-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.85rem 1rem;cursor:pointer;
+}
+.acc-head h4{
+  font-family:'Fraunces',serif;font-weight:500;font-size:0.95rem;color:var(--bone);
+}
+.acc-chevron{width:14px;height:14px;color:var(--bone-faint);transition:transform 0.25s ease;flex:0 0 auto;}
+.acc.open .acc-chevron{transform:rotate(180deg);color:var(--accent-bright);}
+.acc-body{max-height:0;overflow:hidden;transition:max-height 0.35s ease;}
+.acc.open .acc-body{max-height:900px;}
+.acc-body-inner{padding:0 1rem 1rem;}
+.acc-body-inner ul{list-style:none;}
+.acc-body-inner li{
+  font-size:0.85rem;color:var(--bone-dim);font-weight:300;
+  padding-left:1rem;position:relative;margin-bottom:0.5rem;
+}
+.acc-body-inner li::before{content:'—';position:absolute;left:0;color:var(--bone-faint);}
+.acc-body-inner li strong{color:var(--bone);font-weight:500;}
+
+/* footer */
+.footer{
+  max-width:900px;margin:0 auto;padding:2rem 1.1rem 3rem;
+  border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:0.65rem;
+  color:var(--bone-faint);letter-spacing:0.02em;text-align:center;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important;transition-duration:0.01ms !important;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-row">
+      <div class="brand">FEED PROTOCOL<span class="accent-dot">·</span></div>
+      <div class="mode-label" id="modeLabel">TRAINING DAY</div>
+    </div>
+    <div class="day-rail" id="dayRail"></div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-eyebrow" id="heroEyebrow">DAY TYPE 1 — OFFICE</div>
+  <h1 class="hero-day" id="heroDay">Wed<em>nesday</em></h1>
+  <p class="hero-sub" id="heroSub">8.30am training, office day. <strong>90-minute round-trip commute.</strong> Seven feeds, every 2.5–3 hours.</p>
+  <div class="hero-meta" id="heroMeta"></div>
+</div>
+
+<div class="now-banner">
+  <div class="now-banner-inner" id="nowBanner">
+    <div class="now-pulse"></div>
+    <span id="nowText">Next feed in —</span>
+  </div>
+</div>
+
+<div class="timeline" id="timeline">
+  <div class="timeline-rail"></div>
+</div>
+
+<!-- ===================== REFERENCE SECTIONS ===================== -->
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.1</span>
+    <span class="ref-title">Non-Negotiable Daily Targets</span>
+  </div>
+  <div class="targets-grid">
+    <div class="target-card"><span class="tc-val">3,200–3,500</span><span class="tc-lbl">Training day kcal</span></div>
+    <div class="target-card"><span class="tc-val">2,800–3,000</span><span class="tc-lbl">Rest day kcal</span></div>
+    <div class="target-card"><span class="tc-val">200–220g</span><span class="tc-lbl">Protein, every day</span><span class="tc-note">Never reduces on rest days</span></div>
+    <div class="target-card"><span class="tc-val">220–260g</span><span class="tc-lbl">Carbs, training day</span></div>
+    <div class="target-card"><span class="tc-val">150–180g</span><span class="tc-lbl">Carbs, rest day</span></div>
+    <div class="target-card"><span class="tc-val">90–110g</span><span class="tc-lbl">Fat, every day</span></div>
+    <div class="target-card"><span class="tc-val">&lt;35g / &lt;25g</span><span class="tc-lbl">Sugar max (train/rest)</span></div>
+    <div class="target-card"><span class="tc-val">3,500ml</span><span class="tc-lbl">Water, training days</span></div>
+    <div class="target-card"><span class="tc-val">3,000ml</span><span class="tc-lbl">Water, rest days</span></div>
+    <div class="target-card"><span class="tc-val">7–8 portions</span><span class="tc-lbl">Fruit &amp; veg, training days</span></div>
+    <div class="target-card"><span class="tc-val">2.5–3 hrs</span><span class="tc-lbl">Max gap between feeds</span></div>
+    <div class="target-card"><span class="tc-val">20g min</span><span class="tc-lbl">Protein per feed</span><span class="tc-note">Below this doesn't meaningfully stimulate MPS</span></div>
+  </div>
+  <div class="callout"><strong>Do not lose weight or size.</strong> This protocol is built for body recomposition, not weight loss. On flat or depleted days: add extra chicken breast, a handful of nuts, or a larger evening portion — never cut back.</div>
+</div>
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.3</span>
+    <span class="ref-title">Eliminated Permanently</span>
+  </div>
+  <ul class="prose-list">
+    <li><strong>Sugar in cappuccinos</strong> — glucose spike before food destabilises blood sugar and raises cortisol.</li>
+    <li><strong>Ketchup</strong> — Heinz is 23% sugar.</li>
+    <li><strong>Hellmann's Light mayo</strong> — ~200–300 kcal/day of low-quality oil, no nutritional benefit. Replaced with olive oil drizzle and/or pesto.</li>
+    <li><strong>Diet Coke</strong> — phosphoric acid interferes with calcium absorption. Replaced with Pellegrino.</li>
+    <li><strong>Liquid IV electrolytes</strong> — 11g sugar per serving. No electrolyte product currently used; plain water on waking.</li>
+  </ul>
+  <div class="subsection">
+    <div class="subsection-title">3.4 — Mayo calorie replacement, added to every day</div>
+    <ul class="prose-list">
+      <li><strong>Extra half avocado</strong> at breakfast — whole avocado on training days. ~120 kcal, quality monounsaturated fat.</li>
+      <li><strong>30g almonds and cashews</strong> with the afternoon snack on training days — ~180 kcal, 6g protein. Lives in the desk drawer, home and office.</li>
+      <li><strong>1 tbsp olive oil</strong> drizzled over lunch and dinner where mayo would have gone — ~120 kcal/tbsp.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.5</span>
+    <span class="ref-title">Supplement Stack</span>
+  </div>
+  <div class="subsection">
+    <div class="subsection-title">Morning — with breakfast, every day</div>
+    <ul class="prose-list">
+      <li><strong>Vitamin D3 5,000IU + K2 100mcg</strong> — Thorne or Nature's Best. Take with fat-containing food for absorption.</li>
+      <li><strong>Omega-3</strong> — Bare Biology Lion Heart, 2 capsules. 1,000mg+ EPA/DHA combined. Avoid cheap supermarket omega-3 — EPA/DHA content too low to be therapeutic.</li>
+      <li><strong>Creatine Monohydrate 5g</strong> — reduced from 8g; evidence shows identical muscle saturation at 5g.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <div class="subsection-title">Evening — 60–90 min before bed</div>
+    <ul class="prose-list">
+      <li><strong>Magnesium Glycinate 400mg</strong> — Solgar or Nature's Best specifically, not magnesium oxide. Lives next to the toothbrush.</li>
+      <li><strong>Zinc Picolinate 15mg</strong> — Solgar. 30 minutes after magnesium; they compete for absorption if taken together.</li>
+    </ul>
+  </div>
+  <div class="subsection">
+    <div class="subsection-title">Pre-training</div>
+    <ul class="prose-list">
+      <li><strong>Beet It Sport Nitrate 400</strong> — one shot, 60–90 min before training. Among the strongest evidenced sports nutrition products for nitric oxide and performance.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.6</span>
+    <span class="ref-title">Water Protocol</span>
+  </div>
+  <ul class="prose-list">
+    <li><strong>On waking</strong> — 500ml plain water, before caffeine or food.</li>
+    <li><strong>During training</strong> — 500–750ml, sipped every 10–15 min. Don't wait until thirsty.</li>
+    <li><strong>With every meal</strong> — 500ml, sipped throughout.</li>
+    <li><strong>With every snack</strong> — 300–500ml.</li>
+    <li><strong>Before bed</strong> — 200ml small glass only, to avoid a sleep-disrupting bathroom trip.</li>
+    <li><strong>System</strong> — two 1-litre bottles, MORNING and AFTERNOON, both finished by 6pm.</li>
+  </ul>
+</div>
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.7</span>
+    <span class="ref-title">Functional Foods Reference</span>
+  </div>
+  <div class="acc" data-acc>
+    <div class="acc-head"><h4>Mushrooms, tomatoes, avocado</h4><svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="acc-body"><div class="acc-body-inner"><ul>
+      <li><strong>Mushrooms</strong> — full punnet in the omelette every morning. Vitamin D, potassium, B vitamins.</li>
+      <li><strong>Tomatoes</strong> — already in the omelette. Lycopene, a powerful antioxidant.</li>
+      <li><strong>Avocado</strong> — whole on training days, half on rest days. Monounsaturated fat, potassium, magnesium.</li>
+    </ul></div></div>
+  </div>
+  <div class="acc" data-acc>
+    <div class="acc-head"><h4>Rocket, kale, spinach, broccoli</h4><svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="acc-body"><div class="acc-body-inner"><ul>
+      <li><strong>Rocket</strong> — large handful at lunch. Highest dietary nitrate of any common food — directly increases nitric oxide production for training pump and blood flow.</li>
+      <li><strong>Kale</strong> — already at lunch, increase volume. Indole-3-carbinol supports a healthy oestrogen ratio.</li>
+      <li><strong>Broccoli</strong> — already in evening meals; request frequently. Same indole-3-carbinol benefit.</li>
+      <li><strong>Spinach</strong> — substitute wherever rocket isn't available. Similar nitrate and magnesium profile.</li>
+    </ul></div></div>
+  </div>
+  <div class="acc" data-acc>
+    <div class="acc-head"><h4>Berries &amp; beetroot shots</h4><svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="acc-body"><div class="acc-body-inner"><ul>
+      <li><strong>Blueberries/strawberries</strong> — handful with mid-morning snack and post-workout shake. Reduce exercise-induced muscle damage, accelerate recovery.</li>
+      <li><strong>Beet It Sport shots</strong> — 400mg dietary nitrate, 60–90 min pre-training. Tesco, Amazon UK, Holland &amp; Barrett.</li>
+    </ul></div></div>
+  </div>
+</div>
+
+<div class="ref-section">
+  <div class="ref-section-head">
+    <span class="ref-num">3.9</span>
+    <span class="ref-title">Confirmed Products</span>
+  </div>
+  <ul class="prose-list">
+    <li><strong>ON Gold Standard Whey, Strawberry</strong> — 24g protein / 3g carbs / 1g sugar / 1.5g fat per scoop. No reason to switch.</li>
+    <li><strong>Grenade Carb Killa bars</strong> — Caramel Chaos and Fudge Brownie (214 kcal, 20–23g protein, 1.4g sugar). Two boxes of 12 on subscribe-and-save — one home, one office. Reorder at 6 remaining.</li>
+    <li><strong>Creatine</strong> — 5g daily.</li>
+    <li><strong>Electrolytes</strong> — none currently used. Revisit only if sodium needs emerge from training volume or heat.</li>
+  </ul>
+</div>
+
+<div class="footer">
+  NUTRITION PROTOCOL — REBUILT FOR THE 5-DAY UPPER/LOWER SPLIT &nbsp;·&nbsp; FOR PERSONAL USE
+</div>
+
+<script>
+const DATA = {
+  days: [
+    {
+      key:'wed', short:'Wed', full:'nesday', type:'train', dayType:'Day Type 1', tag:'OFFICE',
+      sub:'8.30am training, office day. <strong>90-minute round-trip commute.</strong> Seven feeds, every 2.5–3 hours.',
+      totals:[['3,290','kcal'],['211g','protein'],['230g','carbs'],['97g','fat'],['3,500ml','water'],['8–9','fruit/veg']],
+      feeds:[
+        {time:'06.20',label:'WAKE',name:'Water and Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['500ml water. Supplements: Vitamin D3 5,000IU + K2, Omega-3 ×2 (Bare Biology), Creatine 5g.','Do not have caffeine before food — caffeine on an empty stomach elevates cortisol exactly when you want it low.']},
+        {time:'07.20',label:'FEED 1',name:'Breakfast',kcal:550,p:45,c:35,f:26,kind:'meal',
+          detail:['<strong>Sequence matters</strong> — eat in this exact order for blood sugar and hormone response.','Step 1: full punnet mushrooms, tomatoes, 3 whole eggs as omelette with cheese — first, before anything else.','Step 2: whole avocado alongside eggs.','Step 3: 2 slices sourdough toast — lower glycaemic index than standard bread. Don\'t swap.','Step 4: cappuccino after food, no sugar.','250ml water alongside. Optional Beet It Sport shot at 07.30 — 60 min before training.']},
+        {time:'07.45–08.00',label:'SCHEDULED',name:'Natural bowel movement',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Consistent and expected post-breakfast. Build this into the morning schedule. Do not rush or suppress it.']},
+        {time:'08.30',label:'TRAIN',name:'Upper A',kcal:0,p:0,c:0,f:0,kind:'train',
+          detail:['500–750ml water throughout, sipped every 10–15 minutes.','Right shoulder: 10-minute warm-up minimum before any pressing movement, without exception.','Session duration: 45–60 minutes.']},
+        {time:'09.15',label:'FEED 2',name:'Post-Workout Shake',kcal:450,p:54,c:52,f:8,kind:'meal',
+          detail:['Within 30 minutes of the last rep — the single most important timing of the day. Walk out shaking this.','<strong>Standard construction</strong>: 1.75 scoops ON Gold Standard Whey + 260ml semi-skimmed milk + 1 banana + handful of oats. No additional fruit, never whole milk.','Oats and banana are appropriate here specifically — muscles are insulin sensitive and will route glucose to glycogen, not fat storage.']},
+        {time:'09.30',label:'LOGISTICS',name:'Leave for office',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['500ml water bottle in bag, or Pellegrino for variety.','No Diet Coke — eliminated permanently.']},
+        {time:'10.30–11.00',label:'FEED 3',name:'Commute / Office Snack',kcal:390,p:26,c:30,f:8,kind:'meal',
+          detail:['Grenade Carb Killa bar — Caramel Chaos or Fudge Brownie.','Small handful blueberries or one apple alongside.','300–500ml water.','Exactly 3 hours after breakfast — skip it and blood sugar drops, cortisol rises before lunch.']},
+        {time:'13.00',label:'FEED 4',name:'Lunch',kcal:620,p:60,c:45,f:18,kind:'meal',
+          detail:['Sequence: chicken first, vegetables second, carbohydrates third.','Two large chicken breasts minimum (300g) — 60g protein from chicken alone.','Large portion kale, rocket, any available vegetables.','Pesto pasta or rice alongside protein, not instead of it.','No mayo — pesto, olive oil drizzle, or hot sauce instead. 500ml water.']},
+        {time:'13.30–14.00',label:'RITUAL',name:'Post-lunch cappuccino',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Keep this — purposeful afternoon cognitive performance tool. No sugar.']},
+        {time:'15.30',label:'FEED 5',name:'Afternoon Snack',kcal:420,p:26,c:22,f:20,kind:'meal',
+          detail:['Second Grenade Carb Killa bar of the day.','30g mixed almonds and cashews — replaces some of the removed mayo calories.','300–500ml water. Prevents the commute-home blood sugar trough and cortisol spike.']},
+        {time:'17.30',label:'LOGISTICS',name:'Commute home — hydration only',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['200–300ml water or Pellegrino en route.']},
+        {time:'19.00–19.30',label:'FEED 6',name:'Evening Meal',kcal:720,p:50,c:58,f:26,kind:'meal',
+          detail:['Wife\'s cooking. Protein anchor every meal. Larger portion than previously — targeting 3,200–3,500 daily.','Protein and vegetables before carbohydrates where naturally possible. No mayo — olive oil drizzle instead. Two vegetable portions minimum.'],
+          options:[
+            'Chicken tomato-cream wraps with cucumber, rice — excellent, keep as is. Add rocket or spinach.',
+            'Sausages, chips, beans — weakest meal. Add 2 chicken breasts alongside. Chips once a week max.',
+            'Salmon, rice, vegetables — excellent. Request twice weekly if possible.',
+            'Chicken, jacket potato, cheese, butter, avocado — very good. Keep the butter; reduce potato slightly on rest days.',
+            'Steak, chips, mushrooms, peas — excellent. High protein, zinc, creatine, haem iron. Chips once a week.'
+          ]},
+        {time:'21.00',label:'SUPPLEMENTS',name:'Evening Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Magnesium Glycinate 400mg — next to the toothbrush.','Wait 30 minutes, then Zinc Picolinate 15mg — not simultaneous with magnesium.','200ml water only, not 500ml before bed.']},
+        {time:'22.00',label:'FEED 7',name:'Pre-Sleep Casein',kcal:160,p:25,c:12,f:3,kind:'meal',
+          detail:['250g Fage Total 0% Greek yoghurt — casein digests slowly over 7–8 hours, feeding repair through the night.','One teaspoon honey — one, not two. Non-negotiable, every single night.']},
+        {time:'22.30',label:'LIGHTS OUT',name:'Sleep',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Consistent sleep and wake times matter as much as nutrition for recovery and HRV.']}
+      ]
+    },
+    {
+      key:'thu', short:'Thu', full:'rsday', type:'train', dayType:'Day Type 2', tag:'OFFICE',
+      sub:'8.30am training, office day. <strong>Identical structure to Wednesday</strong> — only the session focus changes.',
+      totals:[['3,290','kcal'],['211g','protein'],['230g','carbs'],['97g','fat'],['3,500ml','water'],['8–9','fruit/veg']],
+      note:'Follow <strong>Day Type 1</strong> exactly — same wake, breakfast, training time, shake, snacks, lunch, evening meal, supplements and lights out. Only the training session content changes: <strong>Lower A</strong> rather than Upper A. Lower days carry higher total-body demand — if Whoop suggests more fuel is needed, add an extra chicken breast, a handful of nuts, or a larger evening portion. This is a feel-based adjustment, not a default scale-up.',
+      feeds:[]
+    },
+    {
+      key:'fri', short:'Fri', full:'day', type:'train', dayType:'Day Type 3', tag:'WFH',
+      sub:'11am training, working from home. No pressing, no pulling — pump-focused. Highest compliance day.',
+      totals:[['3,270 / 2,880','kcal (train/rest)'],['207g','protein'],['215g / 145g','carbs (train/rest)'],['95g','fat'],['3,500ml','water'],['8','fruit/veg']],
+      feeds:[
+        {time:'06.20',label:'WAKE',name:'Water and Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['500ml water. Supplements: D3+K2, Omega-3 ×2, Creatine 5g.']},
+        {time:'07.20',label:'FEED 1',name:'Breakfast',kcal:550,p:45,c:35,f:26,kind:'meal',
+          detail:['Same construction as Day Type 1 — full omelette, mushrooms, tomatoes, whole avocado, cheese, 2 sourdough toast.','Cappuccino after food, no sugar. 250ml water alongside.']},
+        {time:'07.45',label:'LOGISTICS',name:'Kids leave for school',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Box of Grenade bars visible on the spare bedroom desk — zero friction.','1-litre water bottle on desk, finished by 12.00.']},
+        {time:'09.30',label:'FEED 2',name:'Pre-Workout Snack',kcal:390,p:26,c:38,f:8,kind:'meal',
+          detail:['Grenade Carb Killa bar from the desk + 1 banana.','Optional Beet It Sport shot — exactly 90 minutes before 11am training.','Skip this and you go into a heavy session on declining blood sugar and glycogen — performance suffers, cortisol spikes.']},
+        {time:'11.00',label:'TRAIN',name:'Arms + Delts',kcal:0,p:0,c:0,f:0,kind:'train',
+          detail:['500–750ml water throughout.','No pressing or pulling by design — shoulder warm-up still applies before lateral raises or overhead work.']},
+        {time:'12.15',label:'FEED 3',name:'Post-Workout Shake',kcal:450,p:54,c:52,f:8,kind:'meal',
+          detail:['Within 30 minutes of the last rep. Standard construction: 1.75 scoops whey + 260ml semi-skimmed milk + 1 banana + handful of oats.']},
+        {time:'13.30',label:'FEED 4',name:'Lunch (self-made)',kcal:580,p:55,c:40,f:18,kind:'meal',
+          detail:['Currently the weak point on these days — made idiot-proof below. Tuna tin lives permanently in the desk drawer.','Post-lunch cappuccino at 14.00, no sugar.'],
+          options:[
+            'Best (5 min): 2 cold chicken breasts with pesto + rocket and spinach + rice or chickpeas.',
+            'Zero cooking: 4 hard-boiled eggs + 1 tin John West tuna + 2 rice cakes + cherry tomatoes + Greek yoghurt with honey.',
+            'Minimum effort: 2 tins tuna + Grenade bar + Greek yoghurt with honey.'
+          ]},
+        {time:'15.30',label:'FEED 5',name:'Afternoon Snack',kcal:420,p:26,c:22,f:20,kind:'meal',
+          detail:['Grenade bar from the desk, second of the day.','30g mixed almonds and cashews from the drawer.','Second litre bottle should be starting by now.']},
+        {time:'18.30–19.00',label:'FEED 6',name:'Evening Meal',kcal:720,p:50,c:55,f:26,kind:'meal',
+          detail:['Wife\'s cooking — same principles as Day Type 1. Substantial protein, two vegetable portions, no mayo, larger serving.']},
+        {time:'21.00',label:'SUPPLEMENTS',name:'Evening Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Magnesium 400mg. Wait 30 minutes. Zinc Picolinate 15mg. 200ml water.']},
+        {time:'22.00',label:'FEED 7',name:'Pre-Sleep Casein',kcal:160,p:25,c:12,f:3,kind:'meal',
+          detail:['250g Fage Greek yoghurt, one teaspoon honey.']},
+        {time:'22.30',label:'LIGHTS OUT',name:'Sleep',kcal:0,p:0,c:0,f:0,kind:'zero',detail:['']}
+      ]
+    },
+    {
+      key:'sat', short:'Sat', full:'urday', type:'train', dayType:'Day Type 4', tag:'FAMILY',
+      sub:'4pm training, <strong>with your son</strong>. Family day — protect this session every week.',
+      totals:[['3,110–3,300','kcal'],['200–215g','protein'],['210–240g','carbs'],['90–100g','fat'],['3,500ml','water'],['7–8','fruit/veg']],
+      feeds:[
+        {time:'07.00',label:'WAKE',name:'Water and Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['500ml water. Supplements: D3+K2, Omega-3 ×2, Creatine 5g.']},
+        {time:'07.30–08.00',label:'FEED 1',name:'Breakfast',kcal:550,p:45,c:35,f:26,kind:'meal',
+          detail:['Same omelette construction as every other day — mushrooms, tomatoes, whole avocado, cheese, toast.','Cappuccino after, no sugar. 250ml water.']},
+        {time:'10.00',label:'FEED 2',name:'Mid-Morning Shake',kcal:290,p:45,c:15,f:5,kind:'meal',
+          detail:['Protein and semi-skimmed milk only — no oats, no banana. Training is 6 hours away.','1.5 scoops whey + 260ml semi-skimmed milk + handful blueberries or strawberries.','Critical on weekends — prevents a 5–6 hour gap between breakfast and lunch.']},
+        {time:'13.00',label:'FEED 3',name:'Lunch',kcal:550,p:45,c:45,f:18,kind:'meal',
+          detail:['Family lunch — keep it social and normal.','Substantial protein source. Carbohydrates appropriate — glycogen is needed for the 4pm session.','Two vegetable portions, olive oil drizzle, no mayo. Post-lunch cappuccino at 13.30.']},
+        {time:'14.30',label:'FEED 4',name:'Pre-Workout',kcal:390,p:21,c:38,f:8,kind:'meal',
+          detail:['90 minutes before training — non-negotiable regardless of what else is happening. Set an alarm if needed.','Grenade Carb Killa bar + 1 banana. Optional Beet It Sport shot.']},
+        {time:'16.00',label:'TRAIN',name:'Lower B — with son',kcal:0,p:0,c:0,f:0,kind:'train',
+          detail:['500–750ml water throughout.','This session is precious beyond its physical benefit — protect it every single week.','Right shoulder warm-up: 10 minutes minimum.','Show correct warm-up and form from the beginning — this is teaching as much as training.']},
+        {time:'17.30',label:'FEED 5',name:'Post-Workout Shake',kcal:450,p:54,c:52,f:8,kind:'meal',
+          detail:['Immediately post-training. Standard construction: 1.75 scoops whey + 260ml semi-skimmed milk + 1 banana + handful of oats.','The anabolic window applies identically on weekends.']},
+        {time:'19.30',label:'FEED 6',name:'Evening Meal',kcal:720,p:50,c:55,f:26,kind:'meal',
+          detail:['Wife\'s cooking — relaxed family meal, same protein-anchor principles. Enjoy it.']},
+        {time:'21.00',label:'SUPPLEMENTS',name:'Evening Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Magnesium 400mg. Zinc Picolinate 15mg 30 minutes later. 200ml water.']},
+        {time:'22.00',label:'FEED 7',name:'Pre-Sleep Casein',kcal:160,p:25,c:12,f:3,kind:'meal',
+          detail:['250g Greek yoghurt, one teaspoon honey.']},
+        {time:'23.00',label:'LIGHTS OUT (MAX)',name:'Sleep',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Slightly later is fine on weekends. Not significantly later — Whoop will show the cost clearly.']}
+      ]
+    },
+    {
+      key:'sun', short:'Sun', full:'day', type:'train', dayType:'Day Type 5', tag:'FAMILY',
+      sub:'4pm training. <strong>Pancakes are sacred.</strong> Otherwise identical structure to Saturday.',
+      totals:[['3,110–3,300','kcal'],['200–215g','protein'],['210–240g','carbs'],['90–100g','fat'],['3,500ml','water'],['7–8','fruit/veg']],
+      feeds:[
+        {time:'07.00',label:'WAKE',name:'Water and Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['500ml water. Supplements: D3+K2, Omega-3 ×2, Creatine 5g.']},
+        {time:'07.30–08.00',label:'FEED 1',name:'Breakfast — Pancakes',kcal:0,p:0,c:0,f:0,kind:'meal',
+          detail:['Chocolate chip pancakes. Family time, non-negotiable. Full enjoyment, zero guilt — this is the 20% of the 80/20 rule, built in by design.','If eggs or yoghurt happen alongside naturally — great. If not, just the pancakes. Don\'t make Sunday breakfast clinical.']},
+        {time:'10.00',label:'FEED 2',name:'Mid-Morning Shake',kcal:290,p:45,c:15,f:5,kind:'meal',
+          detail:['Protein and semi-skimmed milk only — no oats, no banana.','1.5 scoops whey + 260ml semi-skimmed milk + handful blueberries or strawberries.']},
+        {time:'13.00',label:'FEED 3',name:'Lunch',kcal:550,p:45,c:45,f:18,kind:'meal',
+          detail:['Family lunch. Substantial protein, two vegetable portions, olive oil drizzle, no mayo. Cappuccino at 13.30.']},
+        {time:'14.30',label:'FEED 4',name:'Pre-Workout',kcal:390,p:21,c:38,f:8,kind:'meal',
+          detail:['90 minutes before training. Grenade Carb Killa bar + 1 banana. Optional Beet It Sport shot.']},
+        {time:'16.00',label:'TRAIN',name:'Upper B',kcal:0,p:0,c:0,f:0,kind:'train',
+          detail:['500–750ml water throughout. Right shoulder warm-up: 10 minutes minimum.']},
+        {time:'17.30',label:'FEED 5',name:'Post-Workout Shake',kcal:450,p:54,c:52,f:8,kind:'meal',
+          detail:['Immediately post-training. Standard construction: 1.75 scoops whey + 260ml semi-skimmed milk + 1 banana + handful of oats.']},
+        {time:'19.30',label:'FEED 6',name:'Evening Meal',kcal:720,p:50,c:55,f:26,kind:'meal',
+          detail:['Wife\'s cooking — relaxed family meal.']},
+        {time:'21.00',label:'SUPPLEMENTS',name:'Evening Supplements',kcal:0,p:0,c:0,f:0,kind:'zero',
+          detail:['Magnesium 400mg. Zinc Picolinate 15mg 30 minutes later. 200ml water.']},
+        {time:'22.00',label:'FEED 7',name:'Pre-Sleep Casein',kcal:160,p:25,c:12,f:3,kind:'meal',
+          detail:['250g Greek yoghurt, one teaspoon honey.']},
+        {time:'23.00',label:'LIGHTS OUT (MAX)',name:'Sleep',kcal:0,p:0,c:0,f:0,kind:'zero',detail:['']}
+      ]
+    },
+    {
+      key:'mon', short:'Mon', full:'day', type:'rest', dayType:'Rest Day', tag:'WFH',
+      sub:'Rest day, working from home. Recovery day, <strong>not a diet day</strong> — only carbs are reduced.',
+      totals:[['2,800–3,000','kcal'],['200–220g','protein (unchanged)'],['~150g','carbs (reduced)'],['90–110g','fat (unchanged)'],['3,000ml','water'],['5+','fruit/veg']],
+      note:'Muscle protein synthesis peaks 24–48 hours after training — rest days are when you actually grow. The <strong>only variable that changes is carbohydrates</strong>; protein, fat, water, supplements, and fruit/veg targets all stay identical. Follow the <strong>Day Type 3 (Friday)</strong> feed timings and logistics — desk drawer snacks, spare bedroom base — with these carb reductions applied: morning shake is protein and milk only (no oats, no banana); lunch carbs halved; afternoon snack drops the banana; evening meal carb portion slightly smaller. Greek yoghurt before bed stays — the most important rest-day intervention. If feeling flat: add extra chicken, a larger yoghurt portion, or a handful of nuts. Never under-fuel a rest day.',
+      feeds:[]
+    },
+    {
+      key:'tue', short:'Tue', full:'sday', type:'rest', dayType:'Rest Day', tag:'OFFICE',
+      sub:'Rest day, office day. Same rest-day principle as Monday — only carbs are reduced.',
+      totals:[['2,800–3,000','kcal'],['200–220g','protein (unchanged)'],['~150g','carbs (reduced)'],['90–110g','fat (unchanged)'],['3,000ml','water'],['5+','fruit/veg']],
+      note:'Same rest-day principle as Monday. Follow the <strong>Day Type 1 (Wednesday)</strong> feed timings and logistics — commute snack, office lunch — with carb reductions applied: morning shake protein-and-milk only; lunch carbs halved; afternoon snack drops the banana; evening meal carb portion slightly smaller. Protein, fat, water, supplements and fruit/veg all stay at full target. Greek yoghurt before bed stays. Add fuel back in if Whoop or how you feel suggests it — the risk of losing size from under-eating is real at 46.',
+      feeds:[]
+    }
+  ]
+};
+
+let activeKey = 'wed';
+
+function buildDayRail(){
+  const rail = document.getElementById('dayRail');
+  rail.innerHTML = '';
+  DATA.days.forEach(d=>{
+    const pill = document.createElement('button');
+    pill.className = 'day-pill';
+    pill.dataset.key = d.key;
+    pill.innerHTML = `<span class="pill-day">${d.short}</span><span class="pill-type">${d.dayType.replace('Day Type ','T').replace('Rest Day','Rest')}</span>`;
+    pill.addEventListener('click', ()=>selectDay(d.key));
+    rail.appendChild(pill);
+  });
+}
+
+function selectDay(key){
+  activeKey = key;
+  const day = DATA.days.find(d=>d.key===key);
+  document.querySelectorAll('.day-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.key===key);
+  });
+
+  document.body.style.setProperty('--accent', day.type==='rest' ? 'var(--sage)' : 'var(--rust)');
+  document.body.style.setProperty('--accent-bright', day.type==='rest' ? 'var(--sage-bright)' : 'var(--rust-bright)');
+  document.body.style.setProperty('--accent-dim', day.type==='rest' ? 'var(--sage-dim)' : 'var(--rust-dim)');
+
+  document.getElementById('modeLabel').textContent = day.type==='rest' ? 'REST DAY' : 'TRAINING DAY';
+  document.getElementById('heroEyebrow').textContent = `${day.dayType.toUpperCase()} — ${day.tag}`;
+  document.getElementById('heroDay').innerHTML = `${day.short}<em>${day.full}</em>`;
+  document.getElementById('heroSub').innerHTML = day.sub;
+
+  const metaWrap = document.getElementById('heroMeta');
+  metaWrap.innerHTML = '';
+  day.totals.slice(0,3).forEach(t=>{
+    const item = document.createElement('div');
+    item.className = 'hero-meta-item';
+    item.innerHTML = `<span class="val">${t[0]}</span><span class="lbl">${t[1]}</span>`;
+    metaWrap.appendChild(item);
+  });
+
+  renderTimeline(day);
+  checkNow();
+}
+
+function renderTimeline(day){
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '<div class="timeline-rail"></div>';
+
+  if(day.note){
+    const note = document.createElement('div');
+    note.className = 'day-note';
+    note.innerHTML = day.note;
+    tl.appendChild(note);
+  }
+
+  day.feeds.forEach((f,i)=>{
+    const row = document.createElement('div');
+    row.className = `feed ${f.kind}`;
+    row.innerHTML = `
+      <div class="feed-time-col">
+        <div class="feed-node"></div>
+        <div class="feed-time">${f.time}</div>
+      </div>
+      <div class="feed-card ${f.kind==='train' ? 'train-card':''}" data-idx="${i}">
+        <div class="feed-head">
+          <div class="feed-title-block">
+            <div class="feed-label">${f.label}</div>
+            <div class="feed-name">${f.name}</div>
+          </div>
+          ${f.kcal>0 ? `
+          <div class="feed-macros">
+            <div class="feed-kcal">${f.kcal}<span>kcal</span></div>
+            <div class="feed-pcf"><span><b>${f.p}</b>P</span><span><b>${f.c}</b>C</span><span><b>${f.f}</b>F</span></div>
+          </div>` : `<div class="feed-macros"></div>`}
+          <svg class="feed-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="feed-detail"><div class="feed-detail-inner">
+          <ul>${f.detail.filter(x=>x).map(x=>`<li>${x}</li>`).join('')}</ul>
+          ${f.options ? `<div class="options-block"><div class="options-label">Pick one</div><ul>${f.options.map(o=>`<li>${o}</li>`).join('')}</ul></div>` : ''}
+        </div></div>
+      </div>
+    `;
+    tl.appendChild(row);
+    row.querySelector('.feed-card').addEventListener('click', (e)=>{
+      e.currentTarget.classList.toggle('open');
+    });
+  });
+
+  if(day.totals && day.totals.length){
+    const strip = document.createElement('div');
+    strip.className = 'totals-strip';
+    strip.innerHTML = `
+      <div class="totals-title">Daily Totals — ${day.dayType}</div>
+      <div class="totals-grid">
+        ${day.totals.map(t=>`<div class="t-item"><span class="t-val">${t[0]}</span><span class="t-lbl">${t[1]}</span></div>`).join('')}
+      </div>
+    `;
+    tl.appendChild(strip);
+  }
+}
+
+function timeToMinutes(t){
+  const clean = t.split(/[–-]/)[0].replace('.',':');
+  const [h,m] = clean.split(':').map(Number);
+  return h*60+(m||0);
+}
+
+function checkNow(){
+  const day = DATA.days.find(d=>d.key===activeKey);
+  const banner = document.getElementById('nowBanner');
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+
+  const jsDay = now.getDay(); // 0 sun .. 6 sat
+  const keyForToday = ['sun','mon','tue','wed','thu','fri','sat'][jsDay];
+
+  document.querySelectorAll('.day-pill').forEach(p=>{
+    p.classList.toggle('is-today', p.dataset.key===keyForToday);
+  });
+
+  if(activeKey !== keyForToday || !day.feeds.length){
+    banner.classList.remove('show');
+    return;
+  }
+
+  let next = null;
+  for(const f of day.feeds){
+    if(timeToMinutes(f.time) >= nowMin){ next = f; break; }
+  }
+  if(next){
+    const diff = timeToMinutes(next.time) - nowMin;
+    const hrs = Math.floor(diff/60), mins = diff%60;
+    const when = hrs>0 ? `${hrs}h ${mins}m` : `${mins}m`;
+    document.getElementById('nowText').textContent = `Next — ${next.name} at ${next.time} (in ${when})`;
+    banner.classList.add('show');
+  } else {
+    document.getElementById('nowText').textContent = `Day complete — lights out.`;
+    banner.classList.add('show');
+  }
+}
+
+document.addEventListener('click', (e)=>{
+  const head = e.target.closest('.acc-head');
+  if(head){
+    head.closest('.acc').classList.toggle('open');
+  }
+});
+
+buildDayRail();
+selectDay(activeKey);
+setInterval(checkNow, 60000);
+</script>
+</body>
+</html>
